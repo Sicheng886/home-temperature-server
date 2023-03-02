@@ -53,7 +53,7 @@ function generatePrompt({
   dailyRange,
   weather,
 }) {
-  return `请基于下面输入的室内温度、湿度，室外温度、湿度以及天气给出生活建议。室内温度${indoorTemp}，室内湿度${indoorHumidity}，室外温度${outdoorTemp}，室外湿度${outdoorHumidity}，全天温度${dailyRange}，天气${weather}。
+  return `请基于输入的室内温度、湿度，室外温度、湿度以及天气给出生活建议。室内温度${indoorTemp}，室内湿度${indoorHumidity}，室外温度${outdoorTemp}，室外湿度${outdoorHumidity}，全天温度${dailyRange}，天气${weather}。
   建议：
 `
 }

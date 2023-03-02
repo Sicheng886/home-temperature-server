@@ -110,7 +110,7 @@ class DataController {
     }
   }
   requestWeatherData() {
-    getCurrentWeather()
+    return getCurrentWeather()
       .then((data) => {
         this._currentWeather = data
         this._lastWeatherUpdate = dayjs().format("YYYY-MM-DD HH:mm:ss")
@@ -118,7 +118,7 @@ class DataController {
       .catch((err) => console.log(err))
   }
   requestForcastData() {
-    get24HourWeather()
+    return get24HourWeather()
       .then((data) => {
         this._forcastWeather = data
         this._lastForcastUpdate = dayjs().format("YYYY-MM-DD HH:mm:ss")
@@ -129,7 +129,7 @@ class DataController {
       .catch((err) => console.log(err))
   }
   requestSensorData() {
-    axios
+    return axios
       .get("http://127.0.0.1:3001")
       .then((res) => {
         this._sensorData = res.data

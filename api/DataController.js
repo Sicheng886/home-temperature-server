@@ -7,6 +7,15 @@ const get24HourWeather = require("./get24HourWeather")
 const getGPTSuggestion = require("./getGPTSuggestion")
 const getWeatherAdvice = require("./getWeatherSuggestion")
 
+function calcArrayToAvg(obj) {
+  Object.keys(obj).forEach((key) => {
+    const arr = obj[key]
+    let sum = 0
+    arr.forEach((num) => (sum += num))
+    obj[key] = sum / arr.length
+  })
+}
+
 class DataController {
   constructor() {
     this._currentWeather = {}
@@ -59,12 +68,111 @@ class DataController {
       const todayFiltered = todayData.filter(
         (entry) => parseInt(entry.hour) <= parseInt(currentHour)
       )
+      const today = dayjs().date()
+      const todayMorningToNightData = todayData
+        .map((item) => item.outdoor)
+        .concat(
+          this._forcastWeather.filter(
+            (entry) => dayjs(entry.fxTime).date() === today
+          )
+        )
+
+      const yesterdayPeriodData = {
+        morningT: [],
+        noonT: [],
+        nightT: [],
+        morningH: [],
+        noonH: [],
+        nightH: [],
+      }
+
+      const todayPeriodData = {
+        morningT: [],
+        noonT: [],
+        nightT: [],
+        morningH: [],
+        noonH: [],
+        nightH: [],
+      }
+
+      yesterdayData.forEach((item) => {
+        const { outdoor, hour } = item
+        const temp = parseInt(outdoor.temp)
+        const humidity = parseInt(outdoor.humidity)
+        const intHour = parseInt(hour)
+        if (intHour > 6 && intHour < 11) {
+          yesterdayPeriodData.morningT.push(temp)
+          yesterdayPeriodData.morningH.push(humidity)
+        }
+        if (intHour >= 11 && intHour < 15) {
+          yesterdayPeriodData.noonT.push(temp)
+          yesterdayPeriodData.noonH.push(humidity)
+        }
+        if (intHour > 17) {
+          yesterdayPeriodData.nightT.push(temp)
+          yesterdayPeriodData.nightH.push(humidity)
+        }
+      })
+
+      todayMorningToNightData.forEach((item) => {
+        let { fxTime, obsTime, temp, humidity } = item
+        temp = parseInt(temp)
+        humidity = parseInt(humidity)
+        const hour = obsTime ? dayjs(obsTime).hour() : dayjs(fxTime).hour()
+        if (hour > 6 && hour < 11) {
+          todayPeriodData.morningT.push(temp)
+          todayPeriodData.morningH.push(humidity)
+        }
+        if (hour >= 11 && hour < 15) {
+          todayPeriodData.noonT.push(temp)
+          todayPeriodData.noonH.push(humidity)
+        }
+        if (hour > 17) {
+          todayPeriodData.nightT.push(temp)
+          todayPeriodData.nightH.push(humidity)
+        }
+      })
+
+      calcArrayToAvg(todayPeriodData)
+      calcArrayToAvg(yesterdayPeriodData)
+
+      const periodData = {
+        temp: {
+          morning: {
+            value: todayPeriodData.morningT,
+            diff: todayPeriodData.morningT - yesterdayPeriodData.morningT,
+          },
+          noon: {
+            value: todayPeriodData.noonT,
+            diff: todayPeriodData.noonT - yesterdayPeriodData.noonT,
+          },
+          night: {
+            value: todayPeriodData.nightT,
+            diff: todayPeriodData.noonT - yesterdayPeriodData.noonT,
+          },
+        },
+        humi: {
+          morning: {
+            value: todayPeriodData.morningH,
+            diff: todayPeriodData.morningH - yesterdayPeriodData.morningH,
+          },
+          noon: {
+            value: todayPeriodData.noonH,
+            diff: todayPeriodData.noonH - yesterdayPeriodData.noonH,
+          },
+          night: {
+            value: todayPeriodData.nightH,
+            diff: todayPeriodData.noonH - yesterdayPeriodData.noonH,
+          },
+        },
+      }
 
       const formattedData = {
         indoorTemp: [],
         indoorHumidity: [],
         outdoorTemp: [],
         outdoorHumidity: [],
+        periodData,
       }
       yesterdayFiltered.concat(todayFiltered).forEach((element) => {
         formattedData.indoorTemp.push(element.indoor.temp)
@@ -74,15 +182,17 @@ class DataController {
       })
       return formattedData
     } catch (err) {
-      console.error("no yesterday data")
+      console.error("yesterday data calc error", err)
       return {
         indoorTemp: [],
         indoorHumidity: [],
         outdoorTemp: [],
         outdoorHumidity: [],
+        periodData: {},
       }
     }
   }
+
   async wrtieTodayData() {
     try {
       const today = dayjs()

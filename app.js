@@ -64,6 +64,11 @@ app.get("/api/all", async (req, res) => {
   res.json(data)
 })
 
+app.get("/manual/adivse", async (req, res) => {
+  await dataController.requestAdvise()
+  res.send("request successd")
+})
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(() => {

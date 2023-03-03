@@ -5,6 +5,7 @@ const fsPromise = require("fs").promises
 const getCurrentWeather = require("./getCurrentWeather")
 const get24HourWeather = require("./get24HourWeather")
 const getGPTSuggestion = require("./getGPTSuggestion")
+const getWeatherAdvice = require("./getWeatherSuggestion")
 
 class DataController {
   constructor() {
@@ -14,6 +15,7 @@ class DataController {
 
     this._dailyRange = "0-0"
     this._gptAdvice = "多喝热水！"
+    this._hefengAdvice = "多喝热水！"
 
     this._lastWeatherUpdate = "1970-01-01 00:00:00"
     this._lastForcastUpdate = "1970-01-01 00:00:00"
@@ -30,7 +32,7 @@ class DataController {
     return this._sensorData
   }
   get gptAdvice() {
-    return this._gptAdvice
+    return this._hefengAdvice
   }
   get updateInformation() {
     return `current weather updated on ${this._lastWeatherUpdate} \n forcast weather update on ${this._lastForcastUpdate} \n sensor data update on ${this._lastSensorUpdate} \n advise gpt data updated on ${this._adviceUpdate}`
@@ -138,31 +140,34 @@ class DataController {
       .catch((err) => console.log(err))
   }
   requestAdvise() {
-    const params = {
-      indoorTemp: this._sensorData.temp,
-      indoorHumidity: this._sensorData.humi,
-      outdoorTemp: this._currentWeather.temp,
-      outdoorHumidity: this._currentWeather.humidity,
-      dailyRange: this._dailyRange,
-      weather: this._currentWeather.text,
-    }
-    getGPTSuggestion(params).then((data) => {
-      this._gptAdvice = data
+    return getWeatherAdvice().then((data) => {
+      this._hefengAdvice = data
       this._adviceUpdate = dayjs().format("YYYY-MM-DD HH:mm:ss")
     })
   }
+  // requestAdvise() {
+  //   const params = {
+  //     indoorTemp: this._sensorData.temp,
+  //     indoorHumidity: this._sensorData.humi,
+  //     outdoorTemp: this._currentWeather.temp,
+  //     outdoorHumidity: this._currentWeather.humidity,
+  //     dailyRange: this._dailyRange,
+  //     weather: this._currentWeather.text,
+  //   }
+  //   return getGPTSuggestion(params).then((data) => {
+  //     this._gptAdvice = data
+  //     this._adviceUpdate = dayjs().format("YYYY-MM-DD HH:mm:ss")
+  //   })
+  // }
   schedual() {
     Promise.all([
       this.requestForcastData(),
       this.requestWeatherData(),
       this.requestSensorData(),
-    ])
-      .then(() => {
-        this.requestAdvise()
-      })
-      .catch((err) => {
-        console.log(err)
-      })
+      this.requestAdvise(),
+    ]).catch((err) => {
+      console.log(err)
+    })
 
     cron.schedule("*/10 * * * *", () => {
       this.requestWeatherData()
